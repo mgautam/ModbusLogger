@@ -228,7 +228,7 @@ namespace ModbusLogger
         string[] hex = new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F" };
         public void printRequest(byte[] _framebuf, int startidx, int _framelen, int readidx, int next_readidx, int writeidx)
         {
-            outstr = "Req:";
+            outstr = "Req: ";
             if (__debugprint__)
             {
                 outstr += "(" + startidx.ToString() + "," + next_readidx.ToString();
@@ -299,7 +299,7 @@ namespace ModbusLogger
 
         public void printResponse(int startidx, int endidx, int writeidx)
         {
-            outstr = "Rsp:";
+            outstr = "Rsp: ";
             if (__debugprint__)
             {
                 outstr += "(" + startidx.ToString() + "," + endidx.ToString();
