@@ -7,8 +7,11 @@ using System.IO;
 
 namespace ModbusLogger
 {
+
     class FrameParser
     {
+        bool __debugprint__ = false;
+
         SerialShare _serialshare;
 
         StreamWriter outputFileStream;
@@ -60,13 +63,12 @@ namespace ModbusLogger
         private int get_searchlim_idx(int startidx, int offset)
         {
             // gets search buffer limited idx for indexing circular buffer
-            int searchidx = 0;
-            searchidx = startidx + offset;
-            if (searchidx >= search_buf_len) searchidx = 0;
+            int searchidx = startidx + offset;
+            if (searchidx >= search_buf_len) searchidx -= search_buf_len;
             return searchidx;
         }
 
-        private int checkget_framelength_in_searchbuf(int startidx, ref byte[] framebuf)
+        private int checkget_framelength_in_searchbuf(int startidx, int searchlen, int checklen, ref byte[] framebuf)
         {
             // Returns -1 if valid frame could not be found
             // Else returns length of frame
@@ -88,6 +90,7 @@ namespace ModbusLogger
                 case 0x10: // Write Multiple Holding Registers
                     bytecount = _search_buffer[get_searchlim_idx(startidx, 6)];
                     frame_wocrc_len = (byte)(7 + bytecount);
+                    if (frame_wocrc_len > (maxframelen - 2)) return -1;//Check length errors
                     break;
 
                 default:
@@ -103,12 +106,18 @@ namespace ModbusLogger
             copy_from_searchbuf(ref framebuf, startidx, frame_wocrc_len);
             int calculated_crc = ModRTU_CRC(framebuf, frame_wocrc_len);
 
-            
-            if (read_crc == calculated_crc)
+            frame_len = (int)frame_wocrc_len + 2; //including crc
+
+            if (__debugprint__)
+            {
+                outputFileStream.Write("(" + searchlen.ToString() + "," + checklen.ToString() + "," + frame_len.ToString() + ")");
+                printsearchframe(startidx, get_searchlim_idx(startidx , frame_len), search_buf_writeidx);
+            }
+
+            if ((read_crc == calculated_crc) && (frame_len <= checklen))
             {
                 framebuf[frame_wocrc_len] = _search_buffer[crcidx];// get_searchlim_idx(crcidx, 0)];
                 framebuf[frame_wocrc_len+1] = _search_buffer[get_searchlim_idx(crcidx, 1)];
-                frame_len = (int)frame_wocrc_len + 2; //including crc
                 return frame_len;
             }
             else return -1;
@@ -141,25 +150,49 @@ namespace ModbusLogger
                 if (_serialshare.mainbufreadidx != _serialshare.mainbufwriteidx) {
                     int lencopied = _serialshare.pop(ref _buffer, minframelen);
                     copy_to_searchbuf(_buffer, lencopied);
+                    //printSearchIdxes(search_buf_readidx, search_buf_writeidx);
 
                     int searchlen = 0;
-                    while(!stopcmd)
+                    //bool reader_below_writer_before = false;
+                    while(!stopcmd) // find all valid frames in search buffer
                     {
                         if (search_buf_readidx <= search_buf_writeidx) searchlen = search_buf_writeidx - search_buf_readidx;
-                        else searchlen = search_buf_writeidx + search_buf_len - search_buf_readidx;
+                        else
+                            searchlen = search_buf_writeidx + search_buf_len - search_buf_readidx;
                         if (searchlen < minframelen) break;
 
-                        for (int i = 0; i < searchlen; i++)
+                        bool validFrameFound = false;
+                        int next_readidx = 0;
+                        int startidx;
+                        int framelen;
+                        int checklen;
+                        for (int i = 0; i < searchlen; i++) // find first valid frame
                         {
-                            int startidx = get_searchlim_idx(search_buf_readidx, i);
-                            int framelen = checkget_framelength_in_searchbuf(startidx, ref _frame);
+                            startidx = get_searchlim_idx(search_buf_readidx, i);
+                            //outputFileStream.WriteLine(startidx);
+                            checklen = searchlen - i;
+                            framelen = checkget_framelength_in_searchbuf(startidx, searchlen, checklen, ref _frame);
                             if (framelen >= minframelen)
                             {
                                 // found valid frame
-                                processframe(_frame, framelen);
-                                search_buf_readidx = get_searchlim_idx(startidx, framelen);//update next readidx
+                                //processframe(_frame, framelen, startidx, search_buf_readidx, search_buf_writeidx);
+                                printResponse(search_buf_readidx, startidx, search_buf_writeidx);
+                                next_readidx = get_searchlim_idx(startidx, framelen);//update next readidx
+                                printRequest(_frame, startidx, framelen, search_buf_readidx, next_readidx, search_buf_writeidx);
+                                search_buf_readidx = next_readidx;
+                                validFrameFound = true;
+                                break;
                             }
                         }
+
+                        if (!validFrameFound)
+                        {
+                            // Couldn't find even a single valid frame
+                            break;
+                        }
+                        /*if (reader_below_writer_before && (search_buf_readidx >= search_buf_writeidx))
+                            break;
+                        reader_below_writer_before = (search_buf_readidx < search_buf_writeidx);*/
                     }
                 }
                 else System.Threading.Thread.Sleep(100);
@@ -193,11 +226,18 @@ namespace ModbusLogger
         }
 
         string[] hex = new string[] { "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F" };
-        public void processframe(byte[] _framebuf, int _framelen)
+        public void printRequest(byte[] _framebuf, int startidx, int _framelen, int readidx, int next_readidx, int writeidx)
         {
+            outstr = "Req:";
+            if (__debugprint__)
+            {
+                outstr += "(" + startidx.ToString() + "," + next_readidx.ToString();
+                outstr += "," + _framelen.ToString();
+                outstr += "," + writeidx.ToString() + ") ";
+            }
             //outputFileStream.Write(BitConverter.ToString(_framebuf, 0, _framelen));
             int idx = 0;
-            outstr = hex[(_framebuf[idx] >> 4) & 0xF] + hex[_framebuf[idx] & 0xF];//Slave Address
+            outstr += hex[(_framebuf[idx] >> 4) & 0xF] + hex[_framebuf[idx] & 0xF];//Slave Address
 
             outstr += "-";
             outstr += hex[(_framebuf[++idx] >> 4) & 0xF] + hex[_framebuf[idx] & 0xF];//Function Code
@@ -230,6 +270,53 @@ namespace ModbusLogger
             outstr += hex[(_framebuf[++idx] >> 4) & 0xF] + hex[_framebuf[idx] & 0xF];//CRC Lo
             outstr += hex[(_framebuf[++idx] >> 4) & 0xF] + hex[_framebuf[idx] & 0xF];//CRC Hi
 
+            outputFileStream.WriteLine(outstr);
+        }
+
+        public void printSearchIdxes(int readidx, int writeidx)
+        {
+            outstr = "( ReadIdx=" + readidx.ToString() + ", WriteIdx=" + writeidx.ToString() + " )";
+            outputFileStream.WriteLine(outstr);
+        }
+
+        public void printsearchframe(int startidx, int endidx, int writeidx)
+        {
+            outstr = "(" + startidx.ToString() + "," + endidx.ToString();
+            outstr += "," + writeidx.ToString() + ") "; 
+            //outputFileStream.Write(BitConverter.ToString(_framebuf, 0, _framelen));
+            if (startidx <= endidx)
+                for (int idx = startidx; idx < endidx; idx++)
+                    outstr += hex[(_search_buffer[idx] >> 4) & 0xF] + hex[_search_buffer[idx] & 0xF] + " ";
+            else
+            {
+                for (int idx = startidx; idx < search_buf_len; idx++)
+                    outstr += hex[(_search_buffer[idx] >> 4) & 0xF] + hex[_search_buffer[idx] & 0xF] + " ";
+                for (int idx = 0; idx < endidx; idx++)
+                    outstr += hex[(_search_buffer[idx] >> 4) & 0xF] + hex[_search_buffer[idx] & 0xF] + " ";
+            }
+            outputFileStream.WriteLine(outstr);
+        }
+
+        public void printResponse(int startidx, int endidx, int writeidx)
+        {
+            outstr = "Rsp:";
+            if (__debugprint__)
+            {
+                outstr += "(" + startidx.ToString() + "," + endidx.ToString();
+                outstr += "," + (endidx - startidx).ToString();
+                outstr += "," + writeidx.ToString() + ") ";
+            }
+            //outputFileStream.Write(BitConverter.ToString(_framebuf, 0, _framelen));
+            if (startidx <= endidx)
+                for (int idx = startidx; idx < endidx; idx++)
+                    outstr += hex[(_search_buffer[idx] >> 4) & 0xF] + hex[_search_buffer[idx] & 0xF] + " ";
+            else
+            {
+                for (int idx = startidx; idx < search_buf_len; idx++)
+                    outstr += hex[(_search_buffer[idx] >> 4) & 0xF] + hex[_search_buffer[idx] & 0xF] + " ";
+                for (int idx = 0; idx < endidx; idx++)
+                    outstr += hex[(_search_buffer[idx] >> 4) & 0xF] + hex[_search_buffer[idx] & 0xF] + " ";
+            }
             outputFileStream.WriteLine(outstr);
         }
     }
