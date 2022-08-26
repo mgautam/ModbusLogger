@@ -33,10 +33,6 @@ namespace ModbusLogger
             _frameparser = new FrameParser(_serialshare);
         }
 
-        private void Init_Click(object sender, RoutedEventArgs e)
-        {
-        }
-
         private void StartRead_Click(object sender, RoutedEventArgs e)
         {
             _serialreader.stopcmd = false;
@@ -51,9 +47,16 @@ namespace ModbusLogger
         {
             statetxt.Text = _serialshare.GetState().ToString();
             readlentxt.Text = _serialshare.mainbufreadidx.ToString();
+            outstrtxt.Text = _frameparser.outstr;
         }
 
         private void StopRead_Click(object sender, RoutedEventArgs e)
+        {
+            _serialreader.stopcmd = true;
+            _frameparser.stopcmd = true;
+        }
+
+        private void Window_Closed(object sender, EventArgs e)
         {
             _serialreader.stopcmd = true;
             _frameparser.stopcmd = true;

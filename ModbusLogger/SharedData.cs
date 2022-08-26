@@ -52,22 +52,39 @@ namespace ModbusLogger
         {
             lock (_Lock)
             {
-                if (mainbufwriteidx + buflen >= mainbuflen) mainbufwriteidx = 0;
-                _buffer.CopyTo(_mainbuffer, mainbufwriteidx);
-                mainbufwriteidx += buflen;
+                for (int i = 0; i < buflen; i++)
+                {
+                    if (mainbufwriteidx >= mainbuflen) mainbufwriteidx = 0;
+                    _mainbuffer[mainbufwriteidx] = _buffer[i];
+                    mainbufwriteidx++;
+                    if (mainbufwriteidx >= mainbuflen) mainbufwriteidx = 0;
+                }
                 _State += buflen;
             }
         }
 
-        public void pop(ref byte[] _buffer, int buflen)
+        public int pop(ref byte[] _buffer, int buflen)
         {
+            int poplen = 0;
+            poplen = mainbufwriteidx - mainbufreadidx;
+            if (mainbufreadidx > mainbufwriteidx)
+                poplen += mainbuflen;
+
+            if (poplen > buflen)
+                poplen = buflen;
+
             lock (_Lock)
             {
-                if (mainbufreadidx + buflen >= mainbuflen) mainbufreadidx = 0;
-                for (int i = 0; i < buflen; i++)
-                    _buffer[i] = _mainbuffer[mainbufreadidx + i];
-                mainbufreadidx += buflen;
+                for (int i = 0; i < poplen; i++)
+                {
+                    if (mainbufreadidx >= mainbuflen) mainbufreadidx = 0;
+                    _buffer[i] = _mainbuffer[mainbufreadidx];
+                    mainbufreadidx++;
+                    if (mainbufreadidx >= mainbuflen) mainbufreadidx = 0;
+                }
             }
+
+            return poplen;
         }
     }
 }

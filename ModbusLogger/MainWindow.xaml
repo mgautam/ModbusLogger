@@ -5,14 +5,14 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ModbusLogger"
         mc:Ignorable="d"
-        Title="Modbus RTU Logger" Height="450" Width="800">
+        Title="Modbus RTU Logger" Height="450" Width="800" Closed="Window_Closed">
     <Grid>
-        <Button IsEnabled="False" Content="Init" HorizontalAlignment="Left" Margin="262,134,0,0" VerticalAlignment="Top" Width="75" Click="Init_Click"/>
         <Button Content="StartRead" HorizontalAlignment="Left" Margin="262,181,0,0" VerticalAlignment="Top" Width="94" Click="StartRead_Click"/>
-        <TextBox Name="statetxt" HorizontalAlignment="Left" Height="23" Margin="414,202,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120"/>
+        <TextBox Name="statetxt" HorizontalAlignment="Left" Height="23" Margin="414,202,0,0" TextWrapping="Wrap" Text="MainWriteIndex" VerticalAlignment="Top" Width="120"/>
         <Button Content="Get State" HorizontalAlignment="Left" Margin="414,169,0,0" VerticalAlignment="Top" Width="94" Click="GetState_Click"/>
         <Button Content="StopRead" HorizontalAlignment="Left" Margin="262,230,0,0" VerticalAlignment="Top" Width="94" Click="StopRead_Click"/>
-        <TextBox x:Name="readlentxt" HorizontalAlignment="Left" Height="23" Margin="414,230,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120"/>
+        <TextBox x:Name="readlentxt" HorizontalAlignment="Left" Height="23" Margin="414,230,0,0" TextWrapping="Wrap" Text="MainReadIndex" VerticalAlignment="Top" Width="120"/>
+        <TextBox x:Name="outstrtxt" HorizontalAlignment="Left" Height="23" Margin="414,258,0,0" TextWrapping="Wrap" Text="Current Modbus Data" VerticalAlignment="Top" Width="272"/>
 
     </Grid>
 </Window>

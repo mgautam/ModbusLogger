@@ -28,7 +28,7 @@ namespace ModbusLogger
         {
             try
             {             
-                _serialPort = new SerialPort("COM6", 115200, Parity.Even, 8, StopBits.One);
+                _serialPort = new SerialPort("COM4", 115200, Parity.Even, 8, StopBits.One);
                 _serialPort.Open();
             } catch(Exception)
             {
