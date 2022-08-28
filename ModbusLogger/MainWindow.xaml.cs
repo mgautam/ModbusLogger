@@ -22,9 +22,17 @@ namespace ModbusLogger
     /// </summary>
     public partial class MainWindow : Window
     {
+        static int __debugprint__ = 1;
+        static int __mymbaddr__ = 6;
+
+        static int __minframelen__ = 8;
+        static int __maxframelen__ = 256;
+
         SerialShare _serialshare;
-        SerialReader _serialreader;
+        SerialInterface _serialinterface;
         FrameParser _frameparser;
+        FramePrinter _frame_printer;
+        FrameResponder _frameresponder;
         BackgroundWorker bgWorker;
         bool stopcmd = true;
 
@@ -32,8 +40,10 @@ namespace ModbusLogger
         {
             InitializeComponent();
             _serialshare = new SerialShare();
-            _serialreader = new SerialReader(_serialshare);
-            _frameparser = new FrameParser(_serialshare);
+            _serialinterface = new SerialInterface(_serialshare);
+            _frame_printer = new FramePrinter(__maxframelen__, __debugprint__);
+            _frameresponder = new FrameResponder(_serialinterface, _frame_printer, __mymbaddr__, __debugprint__);
+            _frameparser = new FrameParser(_serialshare, _frame_printer, _frameresponder, __minframelen__, __maxframelen__, __debugprint__);
 
             bgWorker = new BackgroundWorker();
             bgWorker.WorkerReportsProgress = true;
@@ -63,8 +73,8 @@ namespace ModbusLogger
 
         private void StartRead_Click(object sender, RoutedEventArgs e)
         {
-            _serialreader.stopcmd = false;
-            Thread t1 = new Thread(new ThreadStart(_serialreader.readloop));
+            _serialinterface.stopcmd = false;
+            Thread t1 = new Thread(new ThreadStart(_serialinterface.readloop));
             t1.Start();
             _frameparser.stopcmd = false;
             Thread t2 = new Thread(new ThreadStart(_frameparser.processloop));
@@ -79,7 +89,7 @@ namespace ModbusLogger
         {
             statetxt.Text = _serialshare.GetState().ToString();
             readlentxt.Text = _serialshare.mainbufreadidx.ToString();
-            outstrtxt.Text = _frameparser.outstr;
+            outstrtxt.Text = _frameparser._frame_printer.outstr;
         }
 
         private void StopRead_Click(object sender, RoutedEventArgs e)
@@ -87,14 +97,14 @@ namespace ModbusLogger
             if (bgWorker.WorkerSupportsCancellation == true)
                 bgWorker.CancelAsync();
             stopcmd = true;
-            _serialreader.stopcmd = true;
+            _serialinterface.stopcmd = true;
             _frameparser.stopcmd = true;
         }
 
         private void Window_Closed(object sender, EventArgs e)
         {
             stopcmd = true;
-            _serialreader.stopcmd = true;
+            _serialinterface.stopcmd = true;
             _frameparser.stopcmd = true;
         }
     }

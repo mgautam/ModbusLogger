@@ -55,8 +55,10 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="FrameResponder.cs" />
+    <Compile Include="FramePrinter.cs" />
     <Compile Include="FrameParser.cs" />
-    <Compile Include="SerialReader.cs" />
+    <Compile Include="SerialInterface.cs" />
     <Compile Include="SharedData.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

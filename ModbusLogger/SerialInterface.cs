@@ -8,7 +8,7 @@ using System.IO.Ports;
 
 namespace ModbusLogger
 {
-    class SerialReader
+    class SerialInterface
     {
         SerialShare _serialshare;
         SerialPort _serialPort;
@@ -18,7 +18,7 @@ namespace ModbusLogger
 
         public bool stopcmd;
 
-        public SerialReader(SerialShare ss)
+        public SerialInterface(SerialShare ss)
         {
             _serialshare = ss;
             _buffer = new byte[buflen];
@@ -28,7 +28,7 @@ namespace ModbusLogger
         {
             try
             {             
-                _serialPort = new SerialPort("COM5", 115200, Parity.Even, 8, StopBits.One);
+                _serialPort = new SerialPort("COM6", 115200, Parity.Even, 8, StopBits.One);
                 _serialPort.Open();
             } catch(Exception)
             {
@@ -51,6 +51,15 @@ namespace ModbusLogger
                 catch (TimeoutException) { }
             }
             _serialPort.Close();
+        }
+
+        public void send(byte[] txbuf, int buflen)
+        {
+            try
+            {
+                _serialPort.Write(txbuf, 0, buflen);
+            }
+            catch (TimeoutException) { }
         }
     }
 }
