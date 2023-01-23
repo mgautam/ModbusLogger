@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Threading;
 
 namespace ModbusLogger
 {
@@ -14,7 +15,7 @@ namespace ModbusLogger
         SerialInterface _serialif;
         FramePrinter _frameprinter;
 
-        static int _mymbaddr = 5;
+        static int _mymbaddr;
 
         static int _debugprint = 0;
         public FrameResponder(SerialInterface si, FramePrinter fp, int mymbaddr, int debugprint)
@@ -47,9 +48,9 @@ namespace ModbusLogger
             int startaddr = (((int)framebuf[2]) << 8) + (int)framebuf[3];
             int numregisters = (((int)framebuf[4]) << 8) + (int)framebuf[5];
             byte bytecount = 0;
-
+             
             byte[] tempbuf = new byte[256];
-
+            Thread.Sleep(4);
             switch (funccode)
             {
                 case 0x03: // Read Multiple Holding Registers
@@ -57,57 +58,21 @@ namespace ModbusLogger
                     bytecount = (byte) (2 * numregisters);
                     memcopy(framebuf, ref tempbuf, 2);//SlaveAddr+FuncCode
                     tempbuf[2] = bytecount;
-                    switch (40001+startaddr)
+                    switch (startaddr)
                     {
-                        case 40166:
-                        case 41120:
-                        case 40409:
-                        case 45658:
-                        case 41014:
-                        case 45012:
-                        case 40008:
-                            tempbuf[3] = 00; tempbuf[4] = 00;
+                        case 1:
+                            for (byte i = 0; i < bytecount; i++)
+                                tempbuf[i + 3] = 0;
+                            //tempbuf[3] = 0x30;
+                            tempbuf[7] = 0x03;tempbuf[8] = 0xE8;
+                            tempbuf[25] = 0x20;
                             break;
-                        case 45014:
-                        case 40102:
-                        case 45020:
-                            tempbuf[3] = 00; tempbuf[4] = 00;
-                            tempbuf[5] = 00; tempbuf[6] = 00;
+                        case 1288:
+                            tempbuf[3] = 0; tempbuf[4] = 0xA2;
                             break;
-                        case 41025:
-                            tempbuf[3] = 0x06; tempbuf[4] = 0x66;
-                            break;
-                        case 45008:
-                            tempbuf[3] = 0x00; tempbuf[4] = 0x02;
-                            break;
-                        case 45009:
-                            tempbuf[3] = 0x00; tempbuf[4] = 0x0D;
-                            break;
-                        case 40001:
-                            tempbuf[3] = 00; tempbuf[4] = 0x00;
-                            tempbuf[5] = 00; tempbuf[6] = 00;
-                            break;
-                        case 41029:
-                            tempbuf[3] = 00; tempbuf[4] = 0x14;
-                            tempbuf[5] = 00; tempbuf[6] = 0x7D;
-                            break;
-                        case 41031:
-                            tempbuf[3] = 0x04; tempbuf[4] = 0x81;
-                            tempbuf[5] = 0x1A; tempbuf[6] = 0xDB;
-                            break;
-                        case 41008:
-                            tempbuf[3] = 0x10; tempbuf[4] = 0xAC;
-                            tempbuf[5] = 0x08; tempbuf[6] = 0x1E;
-                            break;
-                        case 41010:
-                            tempbuf[3] = 0x02; tempbuf[4] = 0x0C; tempbuf[5] = 0x0C; tempbuf[6] = 0x35;
-                            tempbuf[7] = 0x00; tempbuf[8] = 0x00; tempbuf[9] = 0x03; tempbuf[10] = 0x6B;
-                            break;
-                        case 41038:
-                            tempbuf[3] = 0x2E; tempbuf[4] = 0x38; tempbuf[5] = 0x34; tempbuf[6] = 0x31;
-                            tempbuf[7] = 0x30; tempbuf[8] = 0x2E; tempbuf[9] = 0x2E; tempbuf[10] = 0x30;
-                            tempbuf[11] = 0x34; tempbuf[12] = 0x31; tempbuf[13] = 0x38; tempbuf[14] = 0x38;
-                            tempbuf[15] = 0x47; tempbuf[16] = 0x38; tempbuf[17] = 0x00; tempbuf[18] = 0x00;
+                        case 52:
+                            tempbuf[3] = 0x30; tempbuf[4] = 0x41;
+                            tempbuf[5] = 0x38; tempbuf[6] = 0x30;
                             break;
                         default:
                             for (byte i = 0; i < bytecount; i++)
@@ -117,7 +82,7 @@ namespace ModbusLogger
                     frame_wocrc_len = (byte)(3+bytecount);
                     break;
 
-                case 0x10: // Write Multiple Holding Registers
+                case 0x10: // Write Multiple Holding Registers 
                     memcopy(framebuf, ref tempbuf, 6);//SlaveAddr+FuncCode+StartAddr+NumRegisters
                     frame_wocrc_len = 6;
                     break;

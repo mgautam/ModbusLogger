@@ -77,7 +77,9 @@ namespace ModbusLogger
             outstr += hex[(_framebuf[++idx] >> 4) & 0xF] + hex[_framebuf[idx] & 0xF];//Function Code
 
             outstr += "-";
-            outstr += (40001 + (((int)_framebuf[++idx]) << 8) + _framebuf[++idx]).ToString();//Starting Register Address
+            outstr += hex[(_framebuf[++idx] >> 4) & 0xF] + hex[_framebuf[idx] & 0xF];
+            outstr += hex[(_framebuf[++idx] >> 4) & 0xF] + hex[_framebuf[idx] & 0xF];
+            //outstr += (40001 + (((int)_framebuf[++idx]) << 8) + _framebuf[++idx]).ToString();//Starting Register Address
 
             outstr += "-";
             outstr += ((((int)_framebuf[++idx]) << 8) + _framebuf[++idx]).ToString();//Quantity of Registers

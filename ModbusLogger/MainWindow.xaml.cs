@@ -23,7 +23,7 @@ namespace ModbusLogger
     public partial class MainWindow : Window
     {
         static int __debugprint__ = 1;
-        static int __mymbaddr__ = 6;
+        static int __mymbaddr__ = 0x1F;
 
         static int __minframelen__ = 8;
         static int __maxframelen__ = 256;

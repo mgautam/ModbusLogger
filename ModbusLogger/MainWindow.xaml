@@ -12,7 +12,7 @@
         <Button Content="Get State" HorizontalAlignment="Left" Margin="414,169,0,0" VerticalAlignment="Top" Width="94" Click="GetState_Click"/>
         <Button Content="StopRead" HorizontalAlignment="Left" Margin="262,230,0,0" VerticalAlignment="Top" Width="94" Click="StopRead_Click"/>
         <TextBox x:Name="readlentxt" HorizontalAlignment="Left" Height="23" Margin="414,230,0,0" TextWrapping="Wrap" Text="MainReadIndex" VerticalAlignment="Top" Width="120"/>
-        <TextBox x:Name="outstrtxt" HorizontalAlignment="Left" Height="23" Margin="414,258,0,0" TextWrapping="Wrap" Text="Current Modbus Data" VerticalAlignment="Top" Width="272"/>
+        <TextBox x:Name="outstrtxt" HorizontalAlignment="Left" Height="127" Margin="88,258,0,0" TextWrapping="Wrap" Text="Current Modbus Data" VerticalAlignment="Top" Width="598"/>
 
     </Grid>
 </Window>
